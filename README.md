@@ -1,4 +1,4 @@
-# Automatic_DMI_Experiment_Report
+# Automatic DMI Experiment Report
 
 Manual extraction and analysis of signals from biomedical imaging data, such as MRI and DMI, is a time-consuming and error-prone process. After each invivo experiment, there is a need to summarize it in a report. Although the raw acquired data is preprocessed in Matlab, in order to create this report there is a need to load the datasets, manually identify anatomical regions, and compute relevant signal metrics — all while juggling multiple tools and scripts. This project aims to streamline and automate that workflow by providing a user-friendly graphical interface for visualizing MRI and DMI data, interactively selecting regions of interest (ROIs), and automatically generating clear, reproducible reports. By reducing manual effort and improving consistency, this tool accelerates data analysis and improves productivity in preclinical and clinical imaging research.
 
