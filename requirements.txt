@@ -1,1 +1,9 @@
-
+os
+pandas
+numpy
+scipy
+matplotlib
+h5py
+PyQt5          # (Optional GUI)
+napari         # (Optional interactive viewer)
+reportlab      # (PDF generation)
