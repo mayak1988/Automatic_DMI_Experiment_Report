@@ -418,7 +418,7 @@ class MRICSIViewer(QWidget):
             for ax in axes[num_scans:]:
                 ax.axis('off')
 
-            plt.suptitle(f"{substance_name} - All Scans", fontsize=16)
+            # plt.suptitle(f"{substance_name} - All Scans", fontsize=16)
             plt.tight_layout(rect=[0, 0, 1, 0.95])
 
             # Save one image per substance
