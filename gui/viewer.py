@@ -7,8 +7,8 @@ from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QTextEdit, QPushButton, QFileDialog, QSlider, QScrollArea, QComboBox
 )
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtCore import Qt, pyqtSignal ,QPoint
+from PyQt5.QtGui import QImage, QPixmap, QPainter, QPen, QPolygon
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
@@ -24,25 +24,48 @@ import cv2
 
 
 
+def rotate_and_flip_image(image):
+    # Rotate the image 90 degrees
+    rotated_image = np.rot90(image)
+    # Flip the image along the Y-axis (vertical flip)
+    flipped_image = np.flipud(rotated_image)
+    return flipped_image
+
 class ROIMarker(QWidget):
     finished = pyqtSignal()  # Signal to notify when "Finish" is clicked
 
     def __init__(self, slice_index, image, parent=None):
         super().__init__(parent)
         self.setWindowTitle(f"Mark ROIs - Slice {slice_index}")
-        # self.image = image
-        self.image = self.rotate_and_flip_image(image[:, :, slice_index])
-        self.rois = []  # Optional: store drawn ROIs here
         self.slice_index = slice_index
+        self.image = rotate_and_flip_image(image)
+        self.rois = []
+        self.current_roi = []
+        self.drawing = False
+
+        pixmap = self.numpy_to_pixmap(self.image)
+        self.pixmap = pixmap
+        self.original_pixmap = pixmap.copy()  # This should be the clean untouched image
 
         # === GUI Layout ===
         layout = QVBoxLayout()
 
-        # Display the MRI slice as an image
+        # QLabel to display image
         self.image_label = QLabel()
-        pixmap = self.numpy_to_pixmap(self.image)
-        self.image_label.setPixmap(pixmap)
-        layout.addWidget(self.image_label)
+        self.image_label.setPixmap(self.pixmap)
+        self.image_label.setFixedSize(self.pixmap.size())  # Fix label size to pixmap size
+        self.image_label.setScaledContents(False)
+
+        # Enable mouse events
+        self.image_label.installEventFilter(self)
+        self.image_label.setMouseTracking(True)
+
+        # Scroll area for zoom/resize
+        scroll_area = QScrollArea()
+        scroll_area.setWidget(self.image_label)
+        scroll_area.setWidgetResizable(True)
+
+        layout.addWidget(scroll_area)
 
         # === Buttons ===
         button_layout = QHBoxLayout()
@@ -59,7 +82,6 @@ class ROIMarker(QWidget):
         finish_btn = QPushButton("Finish")
         finish_btn.clicked.connect(self.finish_and_close)
 
-        # Add buttons to layout
         button_layout.addWidget(draw_btn)
         button_layout.addWidget(delete_btn)
         button_layout.addWidget(segment_btn)
@@ -76,18 +98,72 @@ class ROIMarker(QWidget):
         return QPixmap.fromImage(qimage)
 
     def draw_rois(self):
-        print(f"🖊️ Draw ROIs clicked for slice {self.slice_index} (not yet implemented)")
+        print("🖊️ Drawing mode ON")
+        self.drawing = True
+        self.current_roi = []
 
     def delete_rois(self):
-        print(f"🗑️ Delete ROIs clicked for slice {self.slice_index} (not yet implemented)")
+        print("🗑️ Delete ROIs")
+        self.rois = []
+        self.update_image()
 
     def run_segmentation(self):
-        print(f"🧠 Segmentation clicked for slice {self.slice_index} (not yet implemented)")
+        print("🧠 Segmentation clicked (not implemented)")
 
     def finish_and_close(self):
-        print(f"✅ Finished ROI marking for slice {self.slice_index}")
-        self.finished.emit()  # Emit the finished signal
-        self.close()          # Close the ROI window
+        print("✅ Finished marking ROIs")
+        self.finished.emit()
+        self.close()
+
+    def eventFilter(self, source, event):
+        if source is self.image_label and self.drawing:
+            if event.type() == event.MouseButtonPress:
+                if event.button() == Qt.LeftButton:
+                    pos = event.pos()
+                    # Map label pos to pixmap coordinates
+                    pixmap_size = self.image_label.pixmap().size()
+                    label_size = self.image_label.size()
+
+                    # Calculate scale factors
+                    scale_x = pixmap_size.width() / label_size.width()
+                    scale_y = pixmap_size.height() / label_size.height()
+
+                    # Map pos to pixmap coords
+                    mapped_x = int(pos.x() * scale_x)
+                    mapped_y = int(pos.y() * scale_y)
+
+                    self.current_roi.append(QPoint(mapped_x, mapped_y))
+                    self.update_image()
+                elif event.button() == Qt.RightButton:
+                    if len(self.current_roi) > 2:
+                        self.rois.append(self.current_roi)
+                    self.current_roi = []
+                    self.update_image()
+            elif event.type() == event.MouseMove:
+                # Optional for preview
+                pass
+            return True
+        return super().eventFilter(source, event)
+
+    def update_image(self):
+        print(f"Updating image: QLabel size {self.image_label.size()}, pixmap size {self.original_pixmap.size()}")
+        print(f"Number of ROIs: {len(self.rois)}, current ROI points: {len(self.current_roi)}")
+
+        pixmap_copy = self.original_pixmap.copy()
+        painter = QPainter(pixmap_copy)
+        pen = QPen(Qt.red, 2)
+        painter.setPen(pen)
+
+        for roi in self.rois:
+            polygon = QPolygon(roi)
+            painter.drawPolygon(polygon)
+
+        if self.current_roi:
+            for i in range(len(self.current_roi) - 1):
+                painter.drawLine(self.current_roi[i], self.current_roi[i + 1])
+
+        painter.end()
+        self.image_label.setPixmap(pixmap_copy)
 
 
 
@@ -261,12 +337,7 @@ class MRICSIViewer(QWidget):
         mri_slices = [csi_to_mri[csi] for csi in csi_slices]
         return mri_slices, csi_slices
 
-    def rotate_and_flip_image(self,image):
-        # Rotate the image 90 degrees
-        rotated_image = np.rot90(image)
-        # Flip the image along the Y-axis (vertical flip)
-        flipped_image = np.flipud(rotated_image)
-        return flipped_image
+
     
     def normalize_csi_slice(self,csi_slice):
         csi_slice_abs = np.abs(csi_slice)  # Take the magnitude of the complex CSI data
@@ -288,7 +359,7 @@ class MRICSIViewer(QWidget):
         for idx, slice_num in enumerate(selected_slices):
             ax = axes[idx]
             # Apply rotation and flip before displaying
-            rotated_flipped_image = self.rotate_and_flip_image(anatomic[:, :, slice_num])
+            rotated_flipped_image = rotate_and_flip_image(anatomic[:, :, slice_num])
             ax.imshow(rotated_flipped_image, cmap='gray')
             ax.set_title(f'Slice {slice_num + 1}')
             ax.axis('off')
@@ -320,7 +391,7 @@ class MRICSIViewer(QWidget):
         nrows = (num_scans + ncols - 1) // ncols
 
         # Prepare anatomical background image once
-        anatomic_img = self.rotate_and_flip_image(anatomic[:, :, anatomic_slice_idx])
+        anatomic_img = rotate_and_flip_image(anatomic[:, :, anatomic_slice_idx])
 
         for substance_idx, substance_name in enumerate(substances):
             fig, axes = plt.subplots(nrows, ncols, figsize=(4 * ncols, 4 * nrows))
@@ -622,21 +693,31 @@ class MRICSIViewer(QWidget):
         return img
 
     def Mark_Rois(self):
-        slices = self.parse_input(self.mri_input.text())  # or wherever your input is
-        self.slice_queue = [int(s) for s in slices if str(s).isdigit()]
+        self.marked_slices = self.parse_input(self.mri_input.text())  # or wherever your input is
+        self.slice_queue = [int(s) for s in self.marked_slices if str(s).isdigit()]
         self.current_roi_index = 0
 
-        if self.slice_queue:
-            self.launch_next_roi_window()
+        
+        self.launch_next_roi_window()
+    
+    def start_marking_rois(self):
+        self.marked_slices = self.get_selected_mri_slices()  # however you get them
+        self.current_roi_index = 0
+        self.launch_next_roi_window()
 
     def launch_next_roi_window(self):
-        # Create an instance of ROIMarker and connect the signal
-        self.roi_window = ROIMarker(self.slice_index, self.image)
+        if self.current_roi_index >= len(self.marked_slices):
+            print("✅ All ROIs marked.")
+            return
+
+        slice_index = self.marked_slices[self.current_roi_index]
+        mri_slice = self.mri[:, :, slice_index]  # assuming self.mri is 3D
+
+        self.roi_window = ROIMarker(slice_index, mri_slice)
         self.roi_window.finished.connect(self.on_roi_window_closed)
         self.roi_window.show()
 
     def on_roi_window_closed(self):
-        # Proceed to next slice
         self.current_roi_index += 1
         self.launch_next_roi_window()
     
