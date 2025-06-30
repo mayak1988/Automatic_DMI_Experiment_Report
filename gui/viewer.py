@@ -21,11 +21,11 @@ from segment_anything import sam_model_registry, SamPredictor
 from skimage import measure
 from PIL import Image
 import matplotlib.cm as cm
-import gui
-from gui.widgets import DualSliceViewer,ClickableImageLabel
-from gui.visualization import display_anatomic_images,overlay_csi_on_anatomic,plot_roi_intensities,plot_slice_with_rois,calculate_roi_intensity
-from gui.reporting import insert_overlay_images_to_pdf,Generate_Report
-from gui.image_utils import map_mri_to_csi_pairs,normalize_csi_slice,rotate_and_flip_image,normalize,convert_roi_to_mask
+import utils
+from utils.widgets import DualSliceViewer,ClickableImageLabel
+from utils.visualization import display_anatomic_images,overlay_csi_on_anatomic,plot_roi_intensities,plot_slice_with_rois,calculate_roi_intensity
+from utils.reporting import insert_overlay_images_to_pdf,Generate_Report
+from utils.image_utils import map_mri_to_csi_pairs,normalize_csi_slice,rotate_and_flip_image,normalize,convert_roi_to_mask
 from config.config import SAM_CHECKPOINT_PATH,model
 
 
