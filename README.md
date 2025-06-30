@@ -26,6 +26,12 @@ Dependencies can be installed via:
 
 pip install -r requirements.txt
 
+For Segmentation:
+Install Segment Anything:
+ 
+pip install git+https://github.com/facebookresearch/segment-anything.git
+
+
 ## 📦 How to Download, Install, and Run
 
 1. Clone the repository:  
@@ -36,8 +42,16 @@ pip install -r requirements.txt
 2. Install dependencies:
    ```bash
    pip install -r requirements.txt
+   
+3. Install the SAM (Segment Anything):
+   ```bash
+   pip install git+https://github.com/facebookresearch/segment-anything.git
 
-3. Run the program with an example command:
+4. Download the sam_checkpoint and place its path in the config\config.py file:
+   [https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth)
+  
+   
+6. Run the program with an example command:
    ```bash
    python main.py
 
