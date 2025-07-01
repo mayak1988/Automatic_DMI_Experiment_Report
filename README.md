@@ -10,7 +10,7 @@ This project is a Python-based tool designed to streamline the analysis of biome
 
 - **Input**
   
-The input to this tool is a .mat file containing 4D imaging data — typically MRI and DMI volumes over time — along with any relevant experimental metadata provided by the user (e.g., subject ID, scan parameters, time points).
+The input to this tool is the date, participant name, general experiment information and  a .mat file containing 4D imaging data — typically MRI and DMI volumes over time — along with any relevant experimental metadata provided by the user (e.g., subject ID, scan parameters, time points).
 - **Output**
   
 The output is a structured PDF report that includes: a summary of the experiment, overlayed MRI and DMI slices for selected anatomical views, interactive segmentation results, and plots of average signal intensities over time for each selected region of interest (ROI).
@@ -31,6 +31,10 @@ Install Segment Anything:
  
 pip install git+https://github.com/facebookresearch/segment-anything.git
 
+### Important:
+ - In order to run segmentation SAM should be installed. the sam_checkpoint should be installed as well and its path should be copied to the config.py file.
+ - The data file is large therefore storred localy on my PC. When running the GUI you will load it from your saved location
+ - When drawing the ROI manualy, you click on the left mouse multiple times until you cover the desired area. BUT you must click on the right mouse click in the end otherwise the ROI will not be stored.
 
 ## 📦 How to Download, Install, and Run
 
